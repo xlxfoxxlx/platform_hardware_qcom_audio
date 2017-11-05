@@ -67,7 +67,8 @@ LOCAL_SRC_FILES := \
 	audio_extn/ext_speaker.c \
 	audio_extn/audio_extn.c \
 	audio_extn/utils.c \
-	$(AUDIO_PLATFORM)/platform.c
+	$(AUDIO_PLATFORM)/platform.c \
+        acdb.c
 
 ifdef MULTIPLE_HW_VARIANTS_ENABLED
   LOCAL_CFLAGS += -DHW_VARIANTS_ENABLED
@@ -77,6 +78,10 @@ endif
 ifeq ($(strip $(AUDIO_FEATURE_ENABLED_USB_TUNNEL)),true)
     LOCAL_CFLAGS += -DUSB_TUNNEL_ENABLED
     LOCAL_SRC_FILES += audio_extn/usb.c
+endif
+
+ifeq ($(strip $(AUDIO_FEATURE_ENABLED_USB_SIDETONE_VOLUME)),true)
+    LOCAL_CFLAGS += -DUSB_SIDETONE_VOLUME
 endif
 
 LOCAL_SHARED_LIBRARIES := \

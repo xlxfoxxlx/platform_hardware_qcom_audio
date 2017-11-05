@@ -50,7 +50,7 @@
 #define ACDB_DEV_TYPE_OUT 1
 #define ACDB_DEV_TYPE_IN 2
 
-#define MAX_SUPPORTED_CHANNEL_MASKS 2
+#define MAX_SUPPORTED_CHANNEL_MASKS 8
 #define MAX_SUPPORTED_FORMATS 15
 #define MAX_SUPPORTED_SAMPLE_RATES 7
 #define DEFAULT_HDMI_OUT_CHANNELS   2
@@ -82,7 +82,7 @@ enum {
     /* Playback usecases */
     USECASE_AUDIO_PLAYBACK_DEEP_BUFFER = 0,
     USECASE_AUDIO_PLAYBACK_LOW_LATENCY,
-    USECASE_AUDIO_PLAYBACK_MULTI_CH,
+    USECASE_AUDIO_PLAYBACK_HIFI,
     USECASE_AUDIO_PLAYBACK_OFFLOAD,
     USECASE_AUDIO_PLAYBACK_TTS,
     USECASE_AUDIO_PLAYBACK_ULL,
@@ -96,6 +96,7 @@ enum {
     USECASE_AUDIO_RECORD,
     USECASE_AUDIO_RECORD_LOW_LATENCY,
     USECASE_AUDIO_RECORD_MMAP,
+    USECASE_AUDIO_RECORD_HIFI,
 
     /* Voice extension usecases
      *
@@ -130,6 +131,10 @@ enum {
     USECASE_AUDIO_PLAYBACK_AFE_PROXY,
     USECASE_AUDIO_RECORD_AFE_PROXY,
     USECASE_AUDIO_DSM_FEEDBACK,
+
+    /* VOIP usecase*/
+    USECASE_AUDIO_PLAYBACK_VOIP,
+    USECASE_AUDIO_RECORD_VOIP,
 
     AUDIO_USECASE_MAX
 };
@@ -167,6 +172,14 @@ struct offload_cmd {
     int data[];
 };
 
+struct stream_app_type_cfg {
+    int sample_rate;
+    uint32_t bit_width; // unused
+    const char *mode;
+    int app_type;
+    int gain[2];
+};
+
 struct stream_out {
     struct audio_stream_out stream;
     pthread_mutex_t lock; /* see note below on mutex acquisition order */
@@ -186,6 +199,8 @@ struct stream_out {
     audio_usecase_t usecase;
     /* Array of supported channel mask configurations. +1 so that the last entry is always 0 */
     audio_channel_mask_t supported_channel_masks[MAX_SUPPORTED_CHANNEL_MASKS + 1];
+    audio_format_t supported_formats[MAX_SUPPORTED_FORMATS + 1];
+    uint32_t supported_sample_rates[MAX_SUPPORTED_SAMPLE_RATES + 1];
     bool muted;
     uint64_t written; /* total frames written, not cleared when entering standby */
     audio_io_handle_t handle;
@@ -209,6 +224,8 @@ struct stream_out {
 
     error_log_t *error_log;
     power_log_t *power_log;
+
+    struct stream_app_type_cfg app_type_cfg;
 };
 
 struct stream_in {
@@ -222,6 +239,7 @@ struct stream_in {
     int pcm_device_id;
     audio_devices_t device;
     audio_channel_mask_t channel_mask;
+    unsigned int sample_rate;
     audio_usecase_t usecase;
     bool enable_aec;
     bool enable_ns;
@@ -237,13 +255,22 @@ struct stream_in {
     audio_format_t format;
     card_status_t card_status;
     int capture_started;
+
+    struct stream_app_type_cfg app_type_cfg;
+
+    /* Array of supported channel mask configurations.
+       +1 so that the last entry is always 0 */
+    audio_channel_mask_t supported_channel_masks[MAX_SUPPORTED_CHANNEL_MASKS + 1];
+    audio_format_t supported_formats[MAX_SUPPORTED_FORMATS + 1];
+    uint32_t supported_sample_rates[MAX_SUPPORTED_SAMPLE_RATES + 1];
 };
 
 typedef enum usecase_type_t {
     PCM_PLAYBACK,
     PCM_CAPTURE,
     VOICE_CALL,
-    PCM_HFP_CALL
+    PCM_HFP_CALL,
+    USECASE_TYPE_MAX
 } usecase_type_t;
 
 union stream_ptr {
